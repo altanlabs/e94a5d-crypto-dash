@@ -1,12 +1,47 @@
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { motion } from "framer-motion"
-import { ArrowRight } from "lucide-react"
-import { useNavigate } from "react-router-dom"
-
+import { useEffect, useState } from "react";
+import { Line } from "react-chartjs-2";
+import axios from "axios";
+import { Badge } from "@/components/ui/badge";
+import { motion } from "framer-motion";
 
 export default function IndexPage() {
-  const navigate = useNavigate()
+  const [cryptoData, setCryptoData] = useState({ labels: [], datasets: [] });
+
+  useEffect(() => {
+    const fetchCryptoData = async () => {
+      try {
+        const response = await axios.get("https://api.coingecko.com/api/v3/coins/markets", {
+          params: {
+            vs_currency: "usd",
+            order: "market_cap_desc",
+            per_page: 10,
+            page: 1,
+            sparkline: false,
+          },
+        });
+
+        const labels = response.data.map((coin) => coin.name);
+        const data = response.data.map((coin) => coin.current_price);
+
+        setCryptoData({
+          labels,
+          datasets: [
+            {
+              label: "Current Price (USD)",
+              data,
+              backgroundColor: "rgba(75, 192, 192, 0.2)",
+              borderColor: "rgba(75, 192, 192, 1)",
+              borderWidth: 1,
+            },
+          ],
+        });
+      } catch (error) {
+        console.error("Error fetching crypto data", error);
+      }
+    };
+
+    fetchCryptoData();
+  }, []);
 
   return (
     <div className="container mx-auto px-4 py-16 space-y-32">
@@ -18,20 +53,23 @@ export default function IndexPage() {
         transition={{ duration: 0.8 }}
       >
         <Badge variant="secondary" className="mb-4">
-          Welcome to Your New App
+          Retro Crypto Dashboard
         </Badge>
         <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl lg:text-7xl">
-          Build Beautiful Interfaces
-          <br />
-          With Altan AI
+          Track Your Favorite Cryptocurrencies
         </h1>
         <p className="mx-auto max-w-[700px] text-gray-500 md:text-xl dark:text-gray-400">
-          Start chatting to edit this app.
+          Stay updated with the latest prices.
         </p>
-        <Button size="lg" className="mt-4" onClick={() => navigate('/')}>
-          Cool button <ArrowRight className="ml-2 h-4 w-4" />
-        </Button>
       </motion.section>
+
+      {/* Crypto Chart Section */}
+      <section className="mt-8">
+        <h2 className="text-2xl font-semibold text-center mb-4">Current Prices</h2>
+        <div className="max-w-4xl mx-auto">
+          <Line data={cryptoData} />
+        </div>
+      </section>
     </div>
-  )
+  );
 }
