@@ -34,9 +34,9 @@ const App = () => {
   ]);
 
   return (
-    <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
-      <Theme appearance={theme === "system" ? "light" : theme}>
-        <div className={theme}>
+    <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+      <Theme appearance="dark">
+        <div className="min-h-screen bg-black">
           <RouterProvider router={router} />
         </div>
       </Theme>
