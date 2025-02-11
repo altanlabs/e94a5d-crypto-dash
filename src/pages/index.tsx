@@ -23,6 +23,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Github, Twitter } from "lucide-react";
 
 // Register ChartJS components
 ChartJS.register(
@@ -175,129 +176,196 @@ export default function IndexPage() {
   });
 
   return (
-    <div className="min-h-screen bg-black text-white p-6">
-      {/* Header Section */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between mb-2">
-          <h1 className="text-2xl font-bold">Top Gainers & Losers</h1>
-          <div className="flex gap-2">
-            <Badge
-              variant={timeframe === "24H" ? "secondary" : "outline"}
-              className="cursor-pointer"
-              onClick={() => setTimeframe("24H")}
-            >
-              24H
-            </Badge>
-            <Badge
-              variant={timeframe === "Gainers" ? "secondary" : "outline"}
-              className="cursor-pointer"
-              onClick={() => setTimeframe("Gainers")}
-            >
-              Gainers
-            </Badge>
-            <Badge
-              variant={timeframe === "Losers" ? "secondary" : "outline"}
-              className="cursor-pointer"
-              onClick={() => setTimeframe("Losers")}
-            >
-              Losers
-            </Badge>
+    <div className="min-h-screen bg-black text-white">
+      <div className="container mx-auto px-4 py-8">
+        {/* Header Section */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-2">
+            <h1 className="text-2xl font-bold">Top Gainers & Losers</h1>
+            <div className="flex gap-2">
+              <Badge
+                variant={timeframe === "24H" ? "secondary" : "outline"}
+                className="cursor-pointer"
+                onClick={() => setTimeframe("24H")}
+              >
+                24H
+              </Badge>
+              <Badge
+                variant={timeframe === "Gainers" ? "secondary" : "outline"}
+                className="cursor-pointer"
+                onClick={() => setTimeframe("Gainers")}
+              >
+                Gainers
+              </Badge>
+              <Badge
+                variant={timeframe === "Losers" ? "secondary" : "outline"}
+                className="cursor-pointer"
+                onClick={() => setTimeframe("Losers")}
+              >
+                Losers
+              </Badge>
+            </div>
           </div>
+          <p className="text-gray-400">Track, manage and forecast your assets</p>
         </div>
-        <p className="text-gray-400">Track, manage and forecast your assets</p>
+
+        {loading ? (
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
+          </div>
+        ) : (
+          <>
+            {/* Charts Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+              {cryptoData.map((crypto) => {
+                const isPositive = crypto.price_change_percentage_24h > 0;
+                return (
+                  <Card key={crypto.id} className="bg-[#1a1a1a] border-gray-800 p-4 hover:bg-[#242424] transition-colors">
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="flex items-center gap-2">
+                        <img src={crypto.image} alt={crypto.name} className="w-6 h-6" />
+                        <div>
+                          <h3 className="font-medium">{crypto.name}</h3>
+                          <p className="text-sm text-gray-400">True Chart</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-medium">${formatPrice(crypto.current_price)}</p>
+                        <div className={`flex items-center gap-1 text-sm ${
+                          isPositive ? "text-green-500" : "text-red-500"
+                        }`}>
+                          {isPositive ? (
+                            <ArrowUpIcon className="h-4 w-4" />
+                          ) : (
+                            <ArrowDownIcon className="h-4 w-4" />
+                          )}
+                          {Math.abs(crypto.price_change_percentage_24h).toFixed(2)}%
+                        </div>
+                      </div>
+                    </div>
+                    <div className="h-24">
+                      {crypto.sparkline_in_7d.price && (
+                        <Line
+                          data={getChartData(
+                            crypto.sparkline_in_7d.price,
+                            isPositive
+                          )}
+                          options={chartOptions}
+                        />
+                      )}
+                    </div>
+                    <div className="mt-4 text-sm text-gray-400">
+                      Volume: {formatVolume(crypto.total_volume)}
+                    </div>
+                  </Card>
+                );
+              })}
+            </div>
+
+            {/* Table Section */}
+            <div className="rounded-lg border border-gray-800 bg-[#1a1a1a] mb-8">
+              <Table>
+                <TableHeader>
+                  <TableRow className="hover:bg-[#242424] border-gray-800">
+                    <TableHead className="text-gray-400">Rank</TableHead>
+                    <TableHead className="text-gray-400">Name</TableHead>
+                    <TableHead className="text-gray-400">Price</TableHead>
+                    <TableHead className="text-gray-400">24h %</TableHead>
+                    <TableHead className="text-gray-400 text-right">Volume (24h)</TableHead>
+                    <TableHead className="text-gray-400 text-right">Market Cap</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {topCryptos.map((crypto) => (
+                    <TableRow key={crypto.id} className="hover:bg-[#242424] border-gray-800">
+                      <TableCell className="font-medium">{crypto.market_cap_rank}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <img src={crypto.image} alt={crypto.name} className="w-5 h-5" />
+                          <span>{crypto.name}</span>
+                          <span className="text-gray-400 uppercase">{crypto.symbol}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>${formatPrice(crypto.current_price)}</TableCell>
+                      <TableCell className={crypto.price_change_percentage_24h >= 0 ? "text-green-500" : "text-red-500"}>
+                        {crypto.price_change_percentage_24h >= 0 ? "+" : ""}
+                        {crypto.price_change_percentage_24h.toFixed(2)}%
+                      </TableCell>
+                      <TableCell className="text-right">${formatVolume(crypto.total_volume)}</TableCell>
+                      <TableCell className="text-right">${formatVolume(crypto.market_cap)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </>
+        )}
       </div>
 
-      {loading ? (
-        <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
-        </div>
-      ) : (
-        <>
-          {/* Charts Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-            {cryptoData.map((crypto) => {
-              const isPositive = crypto.price_change_percentage_24h > 0;
-              return (
-                <Card key={crypto.id} className="bg-[#1a1a1a] border-gray-800 p-4 hover:bg-[#242424] transition-colors">
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="flex items-center gap-2">
-                      <img src={crypto.image} alt={crypto.name} className="w-6 h-6" />
-                      <div>
-                        <h3 className="font-medium">{crypto.name}</h3>
-                        <p className="text-sm text-gray-400">True Chart</p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-medium">${formatPrice(crypto.current_price)}</p>
-                      <div className={`flex items-center gap-1 text-sm ${
-                        isPositive ? "text-green-500" : "text-red-500"
-                      }`}>
-                        {isPositive ? (
-                          <ArrowUpIcon className="h-4 w-4" />
-                        ) : (
-                          <ArrowDownIcon className="h-4 w-4" />
-                        )}
-                        {Math.abs(crypto.price_change_percentage_24h).toFixed(2)}%
-                      </div>
-                    </div>
-                  </div>
-                  <div className="h-24">
-                    {crypto.sparkline_in_7d.price && (
-                      <Line
-                        data={getChartData(
-                          crypto.sparkline_in_7d.price,
-                          isPositive
-                        )}
-                        options={chartOptions}
-                      />
-                    )}
-                  </div>
-                  <div className="mt-4 text-sm text-gray-400">
-                    Volume: {formatVolume(crypto.total_volume)}
-                  </div>
-                </Card>
-              );
-            })}
+      {/* Footer */}
+      <footer className="bg-[#1a1a1a] border-t border-gray-800">
+        <div className="container mx-auto px-4 py-8">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+            {/* About Section */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">About CryptoDash</h3>
+              <p className="text-gray-400 text-sm">
+                Track cryptocurrency prices, market caps, and trading volumes in real-time.
+                Built with modern technologies for optimal performance.
+              </p>
+            </div>
+
+            {/* Quick Links */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Quick Links</h3>
+              <ul className="space-y-2">
+                <li><a href="#" className="text-gray-400 hover:text-white text-sm">Home</a></li>
+                <li><a href="#" className="text-gray-400 hover:text-white text-sm">Markets</a></li>
+                <li><a href="#" className="text-gray-400 hover:text-white text-sm">Portfolio</a></li>
+                <li><a href="#" className="text-gray-400 hover:text-white text-sm">News</a></li>
+              </ul>
+            </div>
+
+            {/* Resources */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Resources</h3>
+              <ul className="space-y-2">
+                <li><a href="#" className="text-gray-400 hover:text-white text-sm">API Documentation</a></li>
+                <li><a href="#" className="text-gray-400 hover:text-white text-sm">Help Center</a></li>
+                <li><a href="#" className="text-gray-400 hover:text-white text-sm">Blog</a></li>
+                <li><a href="#" className="text-gray-400 hover:text-white text-sm">FAQ</a></li>
+              </ul>
+            </div>
+
+            {/* Social Links */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Connect</h3>
+              <div className="flex space-x-4">
+                <a href="#" className="text-gray-400 hover:text-white">
+                  <Github className="h-6 w-6" />
+                </a>
+                <a href="#" className="text-gray-400 hover:text-white">
+                  <Twitter className="h-6 w-6" />
+                </a>
+              </div>
+            </div>
           </div>
 
-          {/* Table Section */}
-          <div className="rounded-lg border border-gray-800 bg-[#1a1a1a]">
-            <Table>
-              <TableHeader>
-                <TableRow className="hover:bg-[#242424] border-gray-800">
-                  <TableHead className="text-gray-400">Rank</TableHead>
-                  <TableHead className="text-gray-400">Name</TableHead>
-                  <TableHead className="text-gray-400">Price</TableHead>
-                  <TableHead className="text-gray-400">24h %</TableHead>
-                  <TableHead className="text-gray-400 text-right">Volume (24h)</TableHead>
-                  <TableHead className="text-gray-400 text-right">Market Cap</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {topCryptos.map((crypto) => (
-                  <TableRow key={crypto.id} className="hover:bg-[#242424] border-gray-800">
-                    <TableCell className="font-medium">{crypto.market_cap_rank}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <img src={crypto.image} alt={crypto.name} className="w-5 h-5" />
-                        <span>{crypto.name}</span>
-                        <span className="text-gray-400 uppercase">{crypto.symbol}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>${formatPrice(crypto.current_price)}</TableCell>
-                    <TableCell className={crypto.price_change_percentage_24h >= 0 ? "text-green-500" : "text-red-500"}>
-                      {crypto.price_change_percentage_24h >= 0 ? "+" : ""}
-                      {crypto.price_change_percentage_24h.toFixed(2)}%
-                    </TableCell>
-                    <TableCell className="text-right">${formatVolume(crypto.total_volume)}</TableCell>
-                    <TableCell className="text-right">${formatVolume(crypto.market_cap)}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+          {/* Bottom Footer */}
+          <div className="mt-8 pt-8 border-t border-gray-800">
+            <div className="flex flex-col md:flex-row justify-between items-center">
+              <p className="text-gray-400 text-sm">
+                © 2024 CryptoDash. All rights reserved.
+              </p>
+              <div className="flex space-x-4 mt-4 md:mt-0">
+                <a href="#" className="text-gray-400 hover:text-white text-sm">Privacy Policy</a>
+                <a href="#" className="text-gray-400 hover:text-white text-sm">Terms of Service</a>
+                <a href="#" className="text-gray-400 hover:text-white text-sm">Cookie Policy</a>
+              </div>
+            </div>
           </div>
-        </>
-      )}
+        </div>
+      </footer>
     </div>
   );
 }
